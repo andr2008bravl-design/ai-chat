@@ -3,67 +3,216 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Ассистент</title>
+<title>Super AI Multi-Chat</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,sans-serif;background:#1a1a2e;color:#fff;height:100vh;display:flex;flex-direction:column}
-.header{background:#16213e;padding:15px;text-align:center}
+body{font-family:system-ui,sans-serif;background:#1a1a2e;color:#fff;height:100vh;display:flex;overflow:hidden}
+.sidebar{width:260px;background:#16213e;display:flex;flex-direction:column;border-right:1px solid #2d2d44}
+.sidebar-header{padding:15px;display:flex;gap:10px}
+.btn-new{flex:1;background:#00d4ff;border:none;color:#1a1a2e;padding:10px;border-radius:8px;cursor:pointer;font-weight:bold}
+.chats-list{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.chat-item{padding:10px;background:#0f3460;border-radius:6px;cursor:pointer;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;justify-content:space-between;align-items:center}
+.chat-item.active{border:2px solid #00d4ff}
+.main-content{flex:1;display:flex;flex-direction:column;height:100vh}
+.header{background:#16213e;padding:15px;display:flex;justify-content:space-between;align-items:center}
 .header h1{font-size:18px;color:#00d4ff}
+.btn-menu{background:none;border:none;color:#fff;font-size:24px;cursor:pointer;display:none}
 .chat{flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:12px}
 .msg{max-width:85%;padding:12px 16px;border-radius:18px;line-height:1.4;word-wrap:break-word}
 .user{align-self:flex-end;background:#0f3460;border-bottom-right-radius:4px}
 .ai{align-self:flex-start;background:#2d2d44;border-bottom-left-radius:4px}
 .input{background:#16213e;padding:15px;display:flex;gap:10px;align-items:center}
 #inp{flex:1;background:#0f3460;border:none;padding:12px 16px;border-radius:25px;color:#fff;font-size:16px;outline:none}
-button{background:#00d4ff;border:none;color:#1a1a2e;width:45px;height:45px;border-radius:50%;cursor:pointer;font-size:20px}
-.attach{background:#2d2d44;color:#fff}
-img{max-width:200px;border-radius:10px;margin-top:8px}
+.btn-send{background:#00d4ff;border:none;color:#1a1a2e;width:45px;height:45px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center}
+.attach{background:#2d2d44;color:#fff;width:45px;height:45px;border-radius:50%;border:none;cursor:pointer;font-size:20px}
+img{max-width:260px;border-radius:10px;margin-top:8px;display:block}
 .load{color:#888;font-style:italic;align-self:flex-start}
 #modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:1000}
 .mc{background:#16213e;padding:20px;border-radius:15px;width:90%;max-width:400px}
 .mc h2{color:#00d4ff;margin-bottom:10px}
 .mc input{width:100%;padding:10px;margin:10px 0;background:#0f3460;border:1px solid #2d2d44;border-radius:8px;color:#fff}
-.mc button{width:100%;border-radius:8px}
+.mc button{width:100%;border-radius:8px;padding:10px;background:#00d4ff;border:none;cursor:pointer;font-weight:bold}
 .hidden{display:none!important}
 a{color:#00d4ff}
+@media(max-width:768px){
+  .sidebar{display:none}
+  .sidebar.open{display:flex;position:fixed;left:0;top:0;height:100%;z-index:999}
+  .btn-menu{display:block}
+}
 </style>
 </head>
 <body>
 <div id="modal"><div class="mc">
-<h2>🔑 Настройка API</h2>
-<p style="color:#888;font-size:14px">Ключ Gemini API (бесплатно):<br><a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></p>
+<h2>🔑 Настройка API Gemini</h2>
+<p style="color:#888;font-size:12px;margin-bottom:5px">Получите бесплатный ключ:<br><a href="https://google.com" target="_blank">://google.com</a></p>
 <input type="text" id="key" placeholder="Вставьте API ключ...">
 <button onclick="saveKey()">Сохранить</button>
 </div></div>
-<div class="header"><h1>🤖 AI Ассистент</h1></div>
-<div class="chat" id="chat"></div>
-<div class="input">
-<input type="file" id="file" accept="image/*" style="display:none" onchange="upload(this)">
-<button class="attach" onclick="document.getElementById('file').click()">📷</button>
-<input type="text" id="inp" placeholder="Сообщение..." onkeypress="if(event.key=='Enter')send()">
-<button onclick="send()">➤</button>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header"><button class="btn-new" onclick="createNewChat()">+ Новый чат</button></div>
+    <div class="chats-list" id="chatsList"></div>
 </div>
+
+<div class="main-content">
+    <div class="header">
+        <button class="btn-menu" onclick="toggleSidebar()">☰</button>
+        <h1>🤖 Super AI Agent</h1>
+        <button onclick="clearKey()" style="background:none;border:none;color:#888;cursor:pointer;font-size:12px">Сбросить ключ</button>
+    </div>
+    <div class="chat" id="chatBox"></div>
+    <div class="input">
+        <input type="file" id="fileInp" accept="image/*" style="display:none" onchange="handleFile(this)">
+        <button class="attach" onclick="document.getElementById('fileInp').click()">📷</button>
+        <input type="text" id="inp" placeholder="Сообщение или 'Нарисуй космос'..." onkeypress="if(event.key=='Enter')sendMsg()">
+        <button class="btn-send" onclick="sendMsg()">➤</button>
+    </div>
+</div>
+
 <script>
-let key=localStorage.getItem('gk')||'';
-if(key)document.getElementById('modal').classList.add('hidden');
-function saveKey(){let k=document.getElementById('key').value.trim();if(k){key=k;localStorage.setItem('gk',k);document.getElementById('modal').classList.add('hidden');}}
-function add(role,content,img){let c=document.getElementById('chat');let d=document.createElement('div');d.className='msg '+role;let h='';if(img)h+='<img src="'+img+'">';if(content)h+=content.replace(/\n/g,'<br>');d.innerHTML=h;c.appendChild(d);c.scrollTop=c.scrollHeight;}
-function upload(i){let f=i.files[0];if(!f)return;let r=new FileReader();r.onload=e=>send(e.target.result);r.readAsDataURL(f);}
-async function send(img){
-let inp=document.getElementById('inp');let t=inp.value.trim();
-if(!t&&!img)return;
-add('user',t,img);inp.value='';
-add('load','Думаю...');let msgs=document.querySelectorAll('.load');
-try{
-let parts=[{text:t||'Разбери эту электрическую схему'}];
-if(img)parts.push({inline_data:{mime_type:'image/jpeg',data:img.split(',')[1]}});
-let r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+key,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:parts}]})});
-let d=await r.json();
-if(d.error)throw new Error(d.error.message);
-msgs[msgs.length-1].remove();
-add('ai',d.candidates[0].content.parts[0].text);
-}catch(e){msgs[msgs.length-1].remove();add('ai','Ошибка: '+e.message);}
+let apiKey = localStorage.getItem('gk') || '';
+let chats = JSON.parse(localStorage.getItem('ai_chats')) || {};
+let activeChatId = localStorage.getItem('active_chat_id') || '';
+let currentImgData = '';
+
+if(apiKey) document.getElementById('modal').classList.add('hidden');
+
+function saveKey() {
+    let k = document.getElementById('key').value.trim();
+    if(k) { apiKey = k; localStorage.setItem('gk', k); document.getElementById('modal').classList.add('hidden'); init(); }
 }
-</script>
-</body>
-</html>
+function clearKey() { localStorage.removeItem('gk'); location.reload(); }
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+function init() {
+    if(Object.keys(chats).length === 0) { createNewChat(); return; }
+    if(!activeChatId || !chats[activeChatId]) activeChatId = Object.keys(chats)[0];
+    renderChatsList();
+    renderActiveChat();
+}
+
+function createNewChat() {
+    let id = 'chat_' + Date.now();
+    chats[id] = { title: 'Новый чат', history: [] };
+    activeChatId = id;
+    saveToStorage();
+    renderChatsList();
+    renderActiveChat();
+}
+
+function switchChat(id) { activeChatId = id; localStorage.setItem('active_chat_id', id); renderActiveChat(); renderChatsList(); }
+function saveToStorage() { localStorage.setItem('ai_chats', JSON.stringify(chats)); localStorage.setItem('active_chat_id', activeChatId); }
+
+function renderChatsList() {
+    let list = document.getElementById('chatsList');
+    list.innerHTML = '';
+    for(let id in chats) {
+        let item = document.createElement('div');
+        item.className = 'chat-item' + (id === activeChatId ? ' active' : '');
+        item.innerText = chats[id].title;
+        item.onclick = () => switchChat(id);
+        list.appendChild(item);
+    }
+}
+
+function renderActiveChat() {
+    let box = document.getElementById('chatBox');
+    box.innerHTML = '';
+    let hist = chats[activeChatId].history;
+    hist.forEach(m => {
+        let role = m.role === 'user' ? 'user' : 'ai';
+        let text = '', img = '';
+        if (m.parts && Array.isArray(m.parts)) {
+            m.parts.forEach(p => {
+                if(p.text) text += p.text;
+                if(p.inline_data && p.inline_data.data) img = 'data:' + p.inline_data.mime_type + ';base64,' + p.inline_data.data;
+                if(p.image_url) img = p.image_url;
+            });
+        }
+        addMessageHTML(role, text, img);
+    });
+}
+
+function addMessageHTML(role, content, img) {
+    let box = document.getElementById('chatBox');
+    let d = document.createElement('div');
+    d.className = 'msg ' + role;
+    let h = '';
+    if(img) h += '<img src="' + img + '">';
+    if(content) h += content.replace(/\n/g, '<br>');
+    d.innerHTML = h;
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
+}
+
+function handleFile(input) {
+    let f = input.files[0]; if(!f) return;
+    let r = new FileReader();
+    r.onload = e => { currentImgData = e.target.result; alert('Фото прикреплено к сообщению.'); };
+    r.readAsDataURL(f);
+}
+
+async function sendMsg() {
+    let inp = document.getElementById('inp');
+    let txt = inp.value.trim();
+    let img = currentImgData;
+    if(!txt && !img) return;
+
+    inp.value = ''; currentImgData = '';
+    
+    if(chats[activeChatId].history.length === 0 && txt) {
+        chats[activeChatId].title = txt.substring(0, 20) + '...';
+        renderChatsList();
+    }
+
+    let userParts = [];
+    if(txt) userParts.push({ text: txt });
+    if(img) userParts.push({ inline_data: { mime_type: 'image/jpeg', data: img.split(',')[1] } });
+    
+    chats[activeChatId].history.push({ role: 'user', parts: userParts });
+    addMessageHTML('user', txt, img);
+    saveToStorage();
+
+    if(txt && (txt.toLowerCase().startsWith('нарисуй') || txt.toLowerCase().startsWith('draw'))) {
+        addMessageHTML('load', 'Рисую картинку...');
+        let prompt = encodeURIComponent(txt.replace(/нарисуй/gi, '').trim());
+        let seed = Math.floor(Math.random() * 100000);
+        let genImgUrl = `https://pollinations.ai{prompt}?width=512&height=512&nologo=true&seed=${seed}`;
+        
+        setTimeout(() => {
+            let loaders = document.querySelectorAll('.load');
+            if(loaders.length > 0) loaders[loaders.length-1].remove();
+            
+            chats[activeChatId].history.push({ role: 'model', parts: [{ text: `Результат по запросу: "${txt}"`, image_url: genImgUrl }] });
+            addMessageHTML('ai', `Результат по запросу: "${txt}"`, genImgUrl);
+            saveToStorage();
+        }, 3000);
+        return;
+    }
+
+    addMessageHTML('load', 'ИИ думает...');
+    
+    try {
+        let cleanHistory = chats[activeChatId].history.map(m => ({
+            role: m.role === 'user' ? 'user' : 'model',
+            parts: m.parts.map(p => {
+                if (p.inline_data) {
+                    return { inline_data: { mime_type: p.inline_data.mime_type, data: p.inline_data.data } };
+                }
+                return { text: p.text || '' };
+            })
+        }));
+
+        let r = await fetch('https://googleapis.com' + apiKey, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: cleanHistory })
+        });
+        
+        let d = await r.json();
+        let loaders = document.querySelectorAll('.load');
+        if(loaders.length > 0) loaders[loaders.length-1].remove();
+        
+        if(d.error) throw new Error(d.error.message);
+
+        let aiResponseText = d.candidates[0].content.parts[0].text;
